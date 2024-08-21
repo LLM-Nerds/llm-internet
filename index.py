@@ -94,7 +94,7 @@ if st.button("Search and Scrape"):
             elements = {
                 "Name": "Name of the Product",
                 "Price": "Price of the Product",
-                "Image": "The image url of the product, make sure it's the png/jpg/jpeg/gif/svg/webp url, if it's not a complete url, make sure to add the domain name to it",
+                "Image": "The thumbnail image url of the product, make sure it's the png/jpg/jpeg/gif/svg/webp url, if it's not a complete url, make sure to add the domain name to it, renderable image url",
                 "Website": "Product's details Website, make sure it's the complete url, if it's not a complete url, make sure to add the domain name to it",
             }
 
