@@ -30,7 +30,7 @@ llm = initialize_llm()
 st.title("Product Search and Scraper")
 
 query = st.text_input("Enter your search query:")
-num_results = st.slider("Number of results to display", min_value=1, max_value=10, value=5)
+num_results = st.slider("Number of google search results to try scraping", min_value=1, max_value=10, value=5)
 
 # Get random user agent to avoid being blocked by Google
 def get_google_search_results(query):
