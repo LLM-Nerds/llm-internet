@@ -10,7 +10,6 @@ import traceback
 import streamlit as st
 
 os.system("playwright install")
-os.system('playwright install-deps')
 
 
 user_agent_list = [
