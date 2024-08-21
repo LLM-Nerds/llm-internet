@@ -95,11 +95,11 @@ def is_likely_seller_site(url):
     parsed_url = urlparse(url)
     domain = parsed_url.netloc.lower()
     
-    # List of common e-commerce domains
-    ecommerce_domains = ['farmersmarket', 'foodmap', 'thegioitraicay', 'traicaytonyteo', 'lottemart']
+    # List of domains to exclude
+    blacklist_domains = ['dienmayxanh.com', 'bachhoaxanh.com', 'fptshop.com.vn', 'wikipedia.org', 'vi.wikipedia.org']
     
-    # Check if the domain contains any of the e-commerce keywords
-    return any(seller in domain for seller in ecommerce_domains)
+    # Check if the domain is not in the blacklist
+    return not any(seller in domain for seller in blacklist_domains)
 
 def fix_url(base_url, path):
     if not path:
