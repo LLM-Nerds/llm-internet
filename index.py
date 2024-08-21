@@ -8,6 +8,8 @@ from googlesearch import search
 from requests.exceptions import HTTPError
 import traceback
 import streamlit as st
+from urllib.parse import urlparse
+
 
 os.system("playwright install")
 
@@ -33,10 +35,11 @@ llm = initialize_llm()
 st.title("Product Search and Scraper")
 
 query = st.text_input("Enter your search query:")
-num_results = st.slider("Number of google search results to try scraping", min_value=1, max_value=10, value=5)
+num_results = st.slider("Number of google search results to try scraping", min_value=1, max_value=20, value=10)
 
 # Get random user agent to avoid being blocked by Google
 def get_google_search_results(query):
+    start_time = time.time()
     user_agent = random.choice(user_agent_list)
     headers = {'User-Agent': user_agent}
     
@@ -44,13 +47,17 @@ def get_google_search_results(query):
     requests.get = lambda *args, **kwargs: original_get(*args, **{**kwargs, 'headers': headers})
     
     try:
-        results = list(search(query, num_results=5)) 
+        results = list(search(query, num_results)) 
+        filtered_results = [url for url in results if is_likely_seller_site(url)]
+        
         time.sleep(random.uniform(1, 3))
-        return results
+        return filtered_results
     except HTTPError as e:
         raise Exception("Unable to perform search.")
     finally:
         requests.get = original_get
+        end_time = time.time()
+        st.write(f"Google search took {end_time - start_time:.2f} seconds")
 
 def is_relevant_result(result):
     if isinstance(result, list):
@@ -58,18 +65,26 @@ def is_relevant_result(result):
         # and that item is a dictionary with the required keys
         return (len(result) > 0 and
                 isinstance(result[0], dict) and
-                all(key in result[0] for key in ["Name", "Price", "Image"]))
+                all(key in result[0] for key in ["Name", "Price", "Thumbnail Url"]))
     elif isinstance(result, dict):
         # If result is a dictionary, check for the required keys
-        return all(key in result for key in ["Name", "Price", "Image"])
+        return all(key in result for key in ["Name", "Price", "Thumbnail Url"])
     else:
         # If result is neither a list nor a dictionary, it's not relevant
         return False
     
 def scrape_url(url, elements, scraper):
+    start_time = time.time()
+    st.write(f"Scraping {url}: ")
     try:
         result = scraper.run(url=url, elements=elements)
         if is_relevant_result(result):
+            # Fix image URLs
+            if isinstance(result, list):
+                for item in result:
+                    item['Thumbnail Url'] = fix_image_url(item['Thumbnail Url'])
+            elif isinstance(result, dict):
+                result['Thumbnail Url'] = fix_image_url(result['Thumbnail Url'])
             return result
         print(f"Skipping irrelevant result from {url}")
         return None
@@ -78,23 +93,37 @@ def scrape_url(url, elements, scraper):
         print("Traceback:")
         traceback.print_exc()
         return None
+    finally:
+        end_time = time.time()
+        st.write(f"=> Took {end_time - start_time:.2f} seconds")
     
-def print_product_info(product):
-    print(f"Name:    {product.get('Name', 'N/A')}")
-    print(f"Price:   {product.get('Price', 'N/A')}")
-    print(f"Image:   {product.get('Image', 'N/A')}")
-    print(f"Website: {product.get('Website', 'N/A')}")
-    print('-' * 40)
+def is_likely_seller_site(url):
+    parsed_url = urlparse(url)
+    domain = parsed_url.netloc.lower()
+    
+    # List of common e-commerce domains
+    ecommerce_domains = ['farmersmarket', 'foodmap', 'thegioitraicay', 'traicaytonyteo', 'lottemart']
+    
+    # Check if the domain contains any of the e-commerce keywords
+    return any(seller in domain for seller in ecommerce_domains)
+
+def fix_image_url(image_url):
+    if image_url.startswith('//'):
+        return f"https:{image_url}"
+    elif not urlparse(image_url).scheme:
+        return f"https://{image_url}"
+    return image_url
 
 if st.button("Search and Scrape"):
     if query:
         with st.spinner("Searching and scraping..."):
+            overall_start_time = time.time()
             search_results = get_google_search_results(query)[:num_results]
 
             elements = {
                 "Name": "Name of the Product",
                 "Price": "Price of the Product",
-                "Image": "The thumbnail image url of the product, make sure it's the png/jpg/jpeg/gif/svg/webp url, if it's not a complete url, make sure to add the domain name to it, renderable image url",
+                "Thumbnail Url": "The thumbnail image url of the product, if it is the related product image, it may have different url format, make sure to extract the src value of the image tag and make sure it's the complete url, if it's not a complete url, make sure to add the domain name to it",
                 "Website": "Product's details Website, make sure it's the complete url, if it's not a complete url, make sure to add the domain name to it",
             }
 
@@ -106,18 +135,13 @@ if st.button("Search and Scrape"):
                 result = scrape_url(url, elements, scraper)
                 if result:
                     all_results.append(result)
-                    if len(all_results) == num_results:
-                        break
-
-            if all_results:
-                for i, result in enumerate(all_results, 1):
-                    st.subheader(f"Result {i}")
+                    st.write(f"Result from {url}")
                     
                     if isinstance(result, list):
                         for item in result[:5]:
                             col1, col2 = st.columns(2)
                             with col1:
-                                st.image(item.get('Image', 'N/A'), width=200)
+                                st.image(item.get('Thumbnail Url', 'N/A'), width=200)
                             with col2:
                                 st.write(f"**Name:** {item.get('Name', 'N/A')}")
                                 st.write(f"**Price:** {item.get('Price', 'N/A')}")
@@ -125,14 +149,22 @@ if st.button("Search and Scrape"):
                     elif isinstance(result, dict):
                         col1, col2 = st.columns(2)
                         with col1:
-                            st.image(result.get('Image', 'N/A'), width=200)
+                            st.image(result.get('Thumbnail Url', 'N/A'), width=200)
                         with col2:
                             st.write(f"**Name:** {result.get('Name', 'N/A')}")
                             st.write(f"**Price:** {result.get('Price', 'N/A')}")
                             st.write(f"**Website:** {result.get('Website', 'N/A')}")
                     
                     st.markdown("---")
-            else:
+
+                if len(all_results) == num_results:
+                    break
+
+            overall_end_time = time.time()
+            st.write(f"Total processing time: {overall_end_time - overall_start_time:.2f} seconds")
+
+            if not all_results:
                 st.warning("No results found.")
     else:
+        st.warning("Please enter a search query.")
         st.warning("Please enter a search query.")
