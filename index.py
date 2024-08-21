@@ -8,7 +8,9 @@ from googlesearch import search
 from requests.exceptions import HTTPError
 import traceback
 import streamlit as st
-from urllib.parse import urljoin, urlparse
+from urllib.parse import quote_plus, urljoin, urlparse
+from difflib import SequenceMatcher
+
 
 
 os.system("playwright install")
@@ -65,10 +67,12 @@ def is_relevant_result(result):
         # and that item is a dictionary with the required keys
         return (len(result) > 0 and
                 isinstance(result[0], dict) and
-                all(key in result[0] for key in ["Name", "Price", "Thumbnail Url"]))
+                all(key in result[0] for key in ["Name", "Price", "Thumbnail Url"]) and
+                result[0]["Price"] not in [None, "None", ""])
     elif isinstance(result, dict):
         # If result is a dictionary, check for the required keys
-        return all(key in result for key in ["Name", "Price", "Thumbnail Url"])
+        return (all(key in result for key in ["Name", "Price", "Thumbnail Url"]) and
+                result["Price"] not in [None, "None", ""])
     else:
         # If result is neither a list nor a dictionary, it's not relevant
         return False
@@ -113,12 +117,26 @@ def fix_url(base_url, path):
         return urljoin(base_url, path)
     else:
         return f'https://{path}'
+    
+def string_similarity(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
+def filter_results_by_query(results, query, similarity_threshold=0.6):
+    query = query.lower()
+    
+    def is_similar(name):
+        return string_similarity(query, name.lower()) >= similarity_threshold
+    
+    if isinstance(results, list):
+        return [item for item in results if is_similar(item['Name'])]
+    elif isinstance(results, dict):
+        return [results] if is_similar(results['Name']) else []
+    return []
 
 if st.button("Search and Scrape"):
     if query:
         with st.spinner("Searching and scraping..."):
             overall_start_time = time.time()
-            search_results = get_google_search_results(query)[:num_results]
 
             elements = {
                 "Name": "Name of the Product",
@@ -129,17 +147,20 @@ if st.button("Search and Scrape"):
 
             scraper = Parsera(model=llm)
 
+            search_results = get_google_search_results(query)[:num_results]
+
             all_results = []
 
             for url in search_results:
                 result = scrape_url(url, elements, scraper)
                 if result:
                     base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
-                    all_results.append(result)
-                    st.write(f"Result from {url}")
-                    
-                    if isinstance(result, list):
-                        for item in result[:10]:
+                    filtered_result = filter_results_by_query(result, query)
+                    if filtered_result:
+                        all_results.extend(filtered_result)
+                        st.write(f"Result from {url}")
+                        
+                        for item in filtered_result[:10]:
                             item['Website'] = fix_url(base_url, item.get('Website', ''))
                             item['Thumbnail Url'] = fix_url(base_url, item.get('Thumbnail Url', ''))
                             col1, col2 = st.columns(2)
@@ -149,20 +170,9 @@ if st.button("Search and Scrape"):
                                 st.write(f"**Name:** {item.get('Name', 'N/A')}")
                                 st.write(f"**Price:** {item.get('Price', 'N/A')}")
                                 st.write(f"**Website:** {item['Website']}")
-                    elif isinstance(result, dict):
-                        item['Website'] = fix_url(base_url, item.get('Website', ''))
-                        item['Thumbnail Url'] = fix_url(base_url, item.get('Thumbnail Url', ''))
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            st.image(result.get('Thumbnail Url', 'N/A'), width=200)
-                        with col2:
-                            st.write(f"**Name:** {result.get('Name', 'N/A')}")
-                            st.write(f"**Price:** {result.get('Price', 'N/A')}")
-                            st.write(f"**Website:** {result['Website']}")
-                    
-                    st.markdown("---")
+                            st.markdown("---")
 
-                if len(all_results) == num_results:
+                if len(all_results) >= num_results:
                     break
 
             overall_end_time = time.time()
