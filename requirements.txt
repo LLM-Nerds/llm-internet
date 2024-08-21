@@ -4,3 +4,4 @@ google-search-results
 requests
 python-dotenv
 parsera
+googlesearch-python
