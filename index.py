@@ -8,7 +8,7 @@ from googlesearch import search
 from requests.exceptions import HTTPError
 import traceback
 import streamlit as st
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 
 os.system("playwright install")
@@ -114,6 +114,19 @@ def fix_image_url(image_url):
         return f"https://{image_url}"
     return image_url
 
+def fix_url(base_url, path):
+    if not path:
+        return ''
+    parsed_path = urlparse(path)
+    if parsed_path.scheme:
+        return path
+    elif path.startswith('//'):
+        return f'https:{path}'
+    elif path.startswith('/'):
+        return urljoin(base_url, path)
+    else:
+        return f'https://{path}'
+
 if st.button("Search and Scrape"):
     if query:
         with st.spinner("Searching and scraping..."):
@@ -134,26 +147,29 @@ if st.button("Search and Scrape"):
             for url in search_results:
                 result = scrape_url(url, elements, scraper)
                 if result:
+                    base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
                     all_results.append(result)
                     st.write(f"Result from {url}")
                     
                     if isinstance(result, list):
                         for item in result[:5]:
+                            item['Website'] = fix_url(base_url, item.get('Website', ''))
                             col1, col2 = st.columns(2)
                             with col1:
                                 st.image(item.get('Thumbnail Url', 'N/A'), width=200)
                             with col2:
                                 st.write(f"**Name:** {item.get('Name', 'N/A')}")
                                 st.write(f"**Price:** {item.get('Price', 'N/A')}")
-                                st.write(f"**Website:** {item.get('Website', 'N/A')}")
+                                st.write(f"**Website:** {item['Website']}")
                     elif isinstance(result, dict):
+                        result['Website'] = fix_url(base_url, result.get('Website', ''))
                         col1, col2 = st.columns(2)
                         with col1:
                             st.image(result.get('Thumbnail Url', 'N/A'), width=200)
                         with col2:
                             st.write(f"**Name:** {result.get('Name', 'N/A')}")
                             st.write(f"**Price:** {result.get('Price', 'N/A')}")
-                            st.write(f"**Website:** {result.get('Website', 'N/A')}")
+                            st.write(f"**Website:** {result['Website']}")
                     
                     st.markdown("---")
 
