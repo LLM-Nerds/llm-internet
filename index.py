@@ -79,12 +79,6 @@ def scrape_url(url, elements, scraper):
     try:
         result = scraper.run(url=url, elements=elements)
         if is_relevant_result(result):
-            # Fix image URLs
-            if isinstance(result, list):
-                for item in result:
-                    item['Thumbnail Url'] = fix_image_url(item['Thumbnail Url'])
-            elif isinstance(result, dict):
-                result['Thumbnail Url'] = fix_image_url(result['Thumbnail Url'])
             return result
         print(f"Skipping irrelevant result from {url}")
         return None
@@ -106,13 +100,6 @@ def is_likely_seller_site(url):
     
     # Check if the domain contains any of the e-commerce keywords
     return any(seller in domain for seller in ecommerce_domains)
-
-def fix_image_url(image_url):
-    if image_url.startswith('//'):
-        return f"https:{image_url}"
-    elif not urlparse(image_url).scheme:
-        return f"https://{image_url}"
-    return image_url
 
 def fix_url(base_url, path):
     if not path:
@@ -152,8 +139,9 @@ if st.button("Search and Scrape"):
                     st.write(f"Result from {url}")
                     
                     if isinstance(result, list):
-                        for item in result[:5]:
+                        for item in result[:10]:
                             item['Website'] = fix_url(base_url, item.get('Website', ''))
+                            item['Thumbnail Url'] = fix_url(base_url, item.get('Thumbnail Url', ''))
                             col1, col2 = st.columns(2)
                             with col1:
                                 st.image(item.get('Thumbnail Url', 'N/A'), width=200)
@@ -162,7 +150,8 @@ if st.button("Search and Scrape"):
                                 st.write(f"**Price:** {item.get('Price', 'N/A')}")
                                 st.write(f"**Website:** {item['Website']}")
                     elif isinstance(result, dict):
-                        result['Website'] = fix_url(base_url, result.get('Website', ''))
+                        item['Website'] = fix_url(base_url, item.get('Website', ''))
+                        item['Thumbnail Url'] = fix_url(base_url, item.get('Thumbnail Url', ''))
                         col1, col2 = st.columns(2)
                         with col1:
                             st.image(result.get('Thumbnail Url', 'N/A'), width=200)
