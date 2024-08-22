@@ -38,7 +38,7 @@ llm = initialize_llm()
 st.title("Advanced Web Search and Information Extractor")
 
 query = st.text_input("Enter your search query:")
-num_results = st.slider("Number of google search results to process", min_value=1, max_value=20, value=5)
+num_results = 5
 
 def is_product_query(query):
     product_keywords = ['buy', 'price', 'product', 'item', 'purchase']
@@ -96,7 +96,6 @@ def get_google_search_results(query):
     finally:
         requests.get = original_get
         end_time = time.time()
-        st.write(f"Google search took {end_time - start_time:.2f} seconds")
 
 def is_relevant_result(result):
     if isinstance(result, list):
@@ -107,7 +106,6 @@ def is_relevant_result(result):
         return False
     
 def scrape_url(url, elements, scraper):
-    start_time = time.time()
     st.write(f"Scraping {url}: ")
     try:
         result = scraper.run(url=url, elements=elements)
@@ -120,9 +118,6 @@ def scrape_url(url, elements, scraper):
         print("Traceback:")
         traceback.print_exc()
         return None
-    finally:
-        end_time = time.time()
-        st.write(f"=> Took {end_time - start_time:.2f} seconds")
     
 def is_likely_seller_site(url):
     parsed_url = urlparse(url)
@@ -189,19 +184,20 @@ def filter_results_by_query(results, query, similarity_threshold=0.6):
     elif isinstance(results, dict):
         return [results] if is_similar(results) else []
     return []
+
 if st.button("Search and Extract Information"):
     if query:
         with st.spinner("Searching and extracting information..."):
             overall_start_time = time.time()
 
             elements = generate_extraction_elements(query)
-            st.write("Here are the information about the query I will extract:", elements)
+            with st.expander("Click to see the information I will extract"):
+                st.json(elements)
 
             scraper = Parsera(model=llm)
 
             search_results = get_google_search_results(query)[:num_results]
 
-            st.subheader("Search Results")
             all_results = []
 
             is_product_search = is_product_query(query)
@@ -218,7 +214,7 @@ if st.button("Search and Extract Information"):
                     
                     if filtered_result:
                         all_results.extend(filtered_result)
-                        st.write(f"Result from {url}")
+                        st.write(f"Result from: {url}")
                         
                         for item in filtered_result[:10]:
                             col1, col2 = st.columns([1, 3])
@@ -237,59 +233,6 @@ if st.button("Search and Extract Information"):
                                         st.write(f"**{key}:** {value}")
                             
                             st.markdown("---")
-
-                if len(all_results) >= num_results:
-                    break
-
-            overall_end_time = time.time()
-            st.write(f"Total processing time: {overall_end_time - overall_start_time:.2f} seconds")
-
-            if not all_results:
-                st.warning("No results found.")
-    else:
-        st.warning("Please enter a search query.")
-    if query:
-        with st.spinner("Searching and extracting information..."):
-            overall_start_time = time.time()
-
-            elements = generate_extraction_elements(query)
-            st.write("Here are the information about the query I will extract:", elements)
-
-            scraper = Parsera(model=llm)
-
-            search_results = get_google_search_results(query)[:num_results]
-
-            st.subheader("Search Results")
-            all_results = []
-
-            for url in search_results:
-                result = scrape_url(url, elements, scraper)
-                if result:
-                    base_url = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
-                    filtered_result = filter_results_by_query(result, query)
-                    if filtered_result:
-                        all_results.extend(filtered_result)
-                        st.write(f"Result from {url}")
-                        
-                        for item in filtered_result[:10]:
-                            col1, col2 = st.columns([1, 3])
-                            
-                            # Check for image field (could be 'image', 'thumbnailUrl', 'imageUrl', etc.)
-                            image_field = next((field for field in ['image', 'thumbnailUrl', 'imageUrl', 'Thumbnail Url'] if field in item), None)
-                            
-                            if image_field:
-                                image_url = fix_url(base_url, item[image_field])
-                                col1.image(image_url, use_column_width=True)
-                            
-                            # Display other information
-                            with col2:
-                                for key, value in item.items():
-                                    if key != image_field:  # Skip the image field as we've already displayed it
-                                        if key == 'Website':
-                                            value = fix_url(base_url, value)
-                                        st.write(f"**{key}:** {value}")
-                            
-                            st.markdown("---")  # Add a separator between items
 
                 if len(all_results) >= num_results:
                     break
