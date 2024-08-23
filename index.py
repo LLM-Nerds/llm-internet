@@ -50,6 +50,7 @@ def generate_extraction_elements(query):
     You are an AI assistant that generates extraction elements for web scraping based on user queries.
     Given a user's search query, create a JSON object with key-value pairs representing the information to extract.
     The keys should be short labels, and the values should be descriptions of what to extract, the key should be lowercase.
+    Number of keys should be equals or less than 5.
     Return only the JSON object, without any additional formatting or text.
     """
 
