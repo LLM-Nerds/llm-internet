@@ -23,7 +23,7 @@ st.title("Quick News")
 
 llm = initialize_llm()
 
-news_site = st.text_input("Enter the news site URL:", "https://baophapluat.vn")
+news_site = st.text_input("Enter the news site URL:")
 
 def get_latest_news_urls(url, scraper):
     try:
@@ -99,7 +99,7 @@ def fetch_news_and_generate_audio():
                     f.write(audio_bytes)
                 
                 # Display audio player and auto-play using JavaScript
-                st.audio(audio_file_path, format='audio/mp3', autoplay=True)
+                st.audio(audio_file_path, format='audio/mpeg', autoplay=True)
                 
                 for summary in summaries:
                     st.write(summary)
