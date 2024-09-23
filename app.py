@@ -25,7 +25,7 @@ st.title("Quick News")
 
 llm = initialize_llm()
 
-news_site = st.text_input("Enter the news site URL:")
+news_site = st.text_input("Enter the news site URL:", "https://vatvostudio.vn/")
 
 def get_latest_news_urls(url, scraper):
     try:
