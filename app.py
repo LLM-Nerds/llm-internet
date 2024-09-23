@@ -90,9 +90,9 @@ def fetch_news_and_generate_audio():
         scraper = Parsera(model=llm)
         news_urls = get_latest_news_urls(news_site, scraper)
         
-        if not news_urls:
-            # Retry once if no news articles are found
-            news_urls = get_latest_news_urls(news_site, scraper)
+        # if not news_urls:
+        #     # Retry once if no news articles are found
+        #     news_urls = get_latest_news_urls(news_site, scraper)
         
         if news_urls:
             summaries = []
