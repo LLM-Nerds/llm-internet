@@ -7,6 +7,8 @@ from gtts import gTTS # type: ignore
 import requests
 from bs4 import BeautifulSoup
 import time
+from urllib.parse import urlparse
+import base64  # Add this import
 
 os.system("playwright install")
 
@@ -27,6 +29,10 @@ news_site = st.text_input("Enter the news site URL:")
 
 def get_latest_news_urls(url, scraper):
     try:
+        # Ensure the URL ends with a forward slash
+        if not url.endswith('/'):
+            url += '/'
+        
         news_urls = scraper.run(url, { 
             "news_links": "A list of URLs to the latest news articles on this page. Only include full article links, not category or tag pages. Return the links as a list of strings."
         })
@@ -64,7 +70,8 @@ def text_to_speech(text, lang):
     tts = gTTS(text=text, lang=lang)
     fp = io.BytesIO()
     tts.write_to_fp(fp)
-    return fp
+    fp.seek(0)
+    return fp.getvalue()
 
 if "button_disabled" not in st.session_state:
     st.session_state.button_disabled = False
@@ -86,20 +93,20 @@ def fetch_news_and_generate_audio():
             if summaries:
                 # Combine all summaries
                 full_text = " ".join([f"{summary} Bài viết tiếp theo." for summary in summaries])                
-                
+            
                 print("Begin generate audio")
                 # Generate audio
-                audio_fp = text_to_speech(full_text, 'vi')
+                audio_bytes = text_to_speech(full_text, 'vi')
                 print("Done generate audio")
-                # Save audio to a temporary file
-                audio_fp.seek(0)
-                audio_bytes = audio_fp.read()
-                audio_file_path = "temp_audio.mp3"
-                with open(audio_file_path, "wb") as f:
-                    f.write(audio_bytes)
                 
-                # Display audio player and auto-play using JavaScript
-                st.audio(audio_file_path, format='audio/mpeg', autoplay=True)
+                # Encode audio to base64
+                b64 = base64.b64encode(audio_bytes).decode()
+                
+                # Display audio player using HTML
+                st.markdown(
+                    f'<audio autoplay controls><source src="data:audio/mp3;base64,{b64}" type="audio/mp3"></audio>',
+                    unsafe_allow_html=True
+                )
                 
                 for summary in summaries:
                     st.write(summary)
