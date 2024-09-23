@@ -61,7 +61,7 @@ def summarize_article(news_site, url):
         summary_prompt = f"""
         Extract the title and description of the news article in Vietnamese from the following HTML content:
         {text_content}
-        Exclude any links that seem to navigate to pages like FAQ, regulations, terms and services, advertisement, category/list pages, tag pages, search pages, etc. If this is a case, return an empty string.
+        Exclude article that seem like not about a news but a FAQ, regulations, terms and services, advertisement, category/list pages, tag pages, search pages, etc. If this is a case, return an empty string.
         Remove any markdown and format it as a report suitable for speaking.
         Return the title only, followed by the summarized description in about 100 words. Don't return anything else like "this is the title" or "this is the description".
         The language of result must be Vietnamese.
