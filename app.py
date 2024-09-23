@@ -9,10 +9,10 @@ from gtts import gTTS
 import requests
 from bs4 import BeautifulSoup
 import time
-import random
 from langdetect import detect
 from dotenv import load_dotenv
 import streamlit.components.v1 as components
+import asyncio  # Add this import
 
 load_dotenv()
 
@@ -130,3 +130,6 @@ def fetch_news_and_generate_audio():
 
 # Disable button while fetching news and generating audio
 st.button("Tell me", on_click=fetch_news_and_generate_audio, disabled=st.session_state.button_disabled)
+
+# Explicitly close the event loop
+asyncio.get_event_loop().close()
