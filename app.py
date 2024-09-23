@@ -87,9 +87,10 @@ def fetch_news_and_generate_audio():
                 # Combine all summaries
                 full_text = " ".join([f"{summary} Bài viết tiếp theo." for summary in summaries])                
                 
+                print("Begin generate audio")
                 # Generate audio
                 audio_fp = text_to_speech(full_text, 'vi')
-                
+                print("Done generate audio")
                 # Save audio to a temporary file
                 audio_fp.seek(0)
                 audio_bytes = audio_fp.read()
