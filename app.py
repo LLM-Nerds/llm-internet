@@ -37,7 +37,7 @@ def get_latest_news_urls(url, scraper):
           "news_links": """
             A list of URLs to the latest news articles on this page. 
             Only include full article links, not category or tag pages. 
-            Exclude any links that seem to navigate to pages like FAQ, regulations, terms and services, advertisement, category pages, tag pages, search pages, etc. 
+            Exclude any links that seem to navigate to pages like FAQ, regulations, terms and services, advertisement, category/list pages, tag pages, search pages, etc. 
             Ensure all items in the list are valid relative/absolute URLs format.
             Return the links as a list of strings.
           """
