@@ -43,7 +43,7 @@ def get_latest_news_urls(url, scraper):
           """
         })
 
-        return news_urls[0]['news_links'][:3]
+        return news_urls[0]['news_links'][:5]
     except Exception as e:
         print(f"Error getting news links from {url}: {str(e)}")
         return []
@@ -61,6 +61,7 @@ def summarize_article(news_site, url):
         summary_prompt = f"""
         Extract the title and description of the news article in Vietnamese from the following HTML content:
         {text_content}
+        Exclude any links that seem to navigate to pages like FAQ, regulations, terms and services, advertisement, category/list pages, tag pages, search pages, etc. If this is a case, return an empty string.
         Remove any markdown and format it as a report suitable for speaking.
         Return the title only, followed by the summarized description in about 100 words. Don't return anything else like "this is the title" or "this is the description".
         The language of result must be Vietnamese.
@@ -97,8 +98,8 @@ def fetch_news_and_generate_audio():
                 time.sleep(1)  # To avoid overwhelming the server
             
             if summaries:
-                # Combine all summaries
-                full_text = " ".join([f"{summary} Bài viết tiếp theo." for summary in summaries])                
+                # Combine all summaries, filtering out empty ones
+                full_text = "".join([f"{summary} Bài viết tiếp theo." for summary in summaries if summary])                
             
                 print("Begin generate audio")
                 # Generate audio
