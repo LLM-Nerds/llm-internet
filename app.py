@@ -27,10 +27,9 @@ llm = initialize_llm()
 
 news_site = st.text_input("Enter the news site URL:", "https://baophapluat.vn")
 
-def get_latest_news_urls(url):
+def get_latest_news_urls(url, scraper):
     try:
-        parsera = Parsera(model=llm)
-        news_urls = parsera.run(url, { 
+        news_urls = scraper.run(url, { 
             "news_links": "A list of URLs to the latest news articles on this page. Only include full article links, not category or tag pages. Return the links as a list of strings."
         })
 
@@ -75,8 +74,8 @@ if "button_disabled" not in st.session_state:
 def fetch_news_and_generate_audio():
     st.session_state.button_disabled = True
     with st.spinner("Cooking..."):
-        
-        news_urls = get_latest_news_urls(news_site)
+        scraper = Parsera(model=llm)
+        news_urls = get_latest_news_urls(news_site, scraper)
         
         if news_urls:
             summaries = []
