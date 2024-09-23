@@ -3,15 +3,13 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from parsera import Parsera
 import io
 import os
-from gtts import gTTS
+from gtts import gTTS # type: ignore
 import requests
 from bs4 import BeautifulSoup
 import time
-from langdetect import detect
-from dotenv import load_dotenv
-import streamlit.components.v1 as components
 
-load_dotenv()
+os.system("playwright install")
+
 
 @st.cache_resource
 def initialize_llm():
@@ -88,8 +86,6 @@ def fetch_news_and_generate_audio():
             if summaries:
                 # Combine all summaries
                 full_text = " ".join([f"{summary} Bài viết tiếp theo." for summary in summaries])                
-                # Detect language
-                detected_lang = detect(full_text)
                 
                 # Generate audio
                 audio_fp = text_to_speech(full_text, 'vi')
