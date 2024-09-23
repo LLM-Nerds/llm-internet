@@ -132,4 +132,9 @@ def fetch_news_and_generate_audio():
 st.button("Tell me", on_click=fetch_news_and_generate_audio, disabled=st.session_state.button_disabled)
 
 # Explicitly close the event loop
-asyncio.get_event_loop().close()
+try:
+    loop = asyncio.get_event_loop()
+    loop.close()
+except RuntimeError as e:
+    if str(e) != "Event loop is closed":
+        raise
