@@ -34,7 +34,13 @@ def get_latest_news_urls(url, scraper):
             url += '/'
         
         news_urls = scraper.run(url, { 
-            "news_links": "A list of URLs to the latest news articles on this page. Only include full article links, not category or tag pages. Return the links as a list of strings."
+          "news_links": """
+            A list of URLs to the latest news articles on this page. 
+            Only include full article links, not category or tag pages. 
+            Exclude any links that seem to navigate to pages like FAQ, regulations, terms and services, etc. 
+            Ensure all items in the list are valid relative/absolute URLs format.
+            Return the links as a list of strings.
+          """
         })
 
         return news_urls[0]['news_links'][:3]
