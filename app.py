@@ -62,6 +62,7 @@ def summarize_article(news_site, url):
         Extract the title and description of the news article in Vietnamese from the following HTML content:
         {text_content}
         Exclude article that seem like not about a news but a FAQ, regulations, terms and services, advertisement, category/list pages, tag pages, search pages, etc. If this is a case, return an empty string.
+        If you cannot find any information about news article, or cannot process, return an empty string.
         Remove any markdown and format it as a report suitable for speaking.
         Return the title only, followed by the summarized description in about 100 words. Don't return anything else like "this is the title" or "this is the description".
         The language of result must be Vietnamese.
@@ -88,6 +89,10 @@ def fetch_news_and_generate_audio():
     with st.spinner("Cooking..."):
         scraper = Parsera(model=llm)
         news_urls = get_latest_news_urls(news_site, scraper)
+        
+        if not news_urls:
+            # Retry once if no news articles are found
+            news_urls = get_latest_news_urls(news_site, scraper)
         
         if news_urls:
             summaries = []
@@ -121,7 +126,7 @@ def fetch_news_and_generate_audio():
             else:
                 st.warning("Failed to generate summaries for the articles.")
         else:
-            st.warning("No news articles found on the given site.")
+            st.warning("No news articles found on the given site after retrying.")
     st.session_state.button_disabled = False
 
 st.button("Tell me", on_click=fetch_news_and_generate_audio, disabled=st.session_state.button_disabled)
